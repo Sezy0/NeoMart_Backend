@@ -1,0 +1,223 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  SELLER
+  ADMIN
+  FOUNDER
+}
+
+enum StoreStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  GOPAY
+  OVO
+  DANA
+  SHOPEEPAY
+  BANK_TRANSFER
+  CREDIT_CARD
+}
+
+enum OtpType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  PHONE_VERIFICATION
+}
+
+model User {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  password          String?   // Optional for Discord-only users
+  image             String?
+  cart              String    @default("{}")
+  role              Role      @default(USER)
+  isActive          Boolean   @default(true)
+  isEmailVerified   Boolean   @default(false)
+  emailVerifiedAt   DateTime?
+  
+  // Discord OAuth2 fields
+  discordId         String?   @unique
+  discordUsername   String?
+  discordAvatar     String?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  ratings     Rating[]
+  store       Store?
+  buyerOrders Order[]   @relation("BuyerRelation")
+  sessions    Session[]
+  otps        Otp[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  code      String
+  type      OtpType
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  usedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("otps")
+}
+
+model Store {
+  id              String      @id @default(cuid())
+  userId          String      @unique
+  name            String
+  description     String      @db.Text
+  username        String      @unique
+  address         String      @db.Text
+  status          StoreStatus @default(PENDING)
+  isActive        Boolean     @default(false)
+  logo            String?
+  banner          String?
+  socialLinks     Json?
+  rejectionReason String?     @db.Text
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products Product[]
+  orders   Order[]   @relation("StoreRelation")
+
+  @@map("stores")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  mrp         Float
+  price       Float
+  images      Json
+  category    String
+  tags        Json?
+  inStock     Boolean  @default(true)
+  storeId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store      Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  ratings    Rating[]
+
+  @@map("products")
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  orderNumber   String        @unique
+  total         Float
+  status        OrderStatus   @default(PENDING)
+  userId        String
+  storeId       String
+  isPaid        Boolean       @default(false)
+  paymentMethod PaymentMethod
+  paymentId     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  isCouponUsed  Boolean       @default(false)
+  coupon        String?
+
+  user       User        @relation("BuyerRelation", fields: [userId], references: [id])
+  store      Store       @relation("StoreRelation", fields: [storeId], references: [id])
+  orderItems OrderItem[]
+  ratings    Rating[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@id([orderId, productId])
+  @@map("order_items")
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  rating    Int
+  review    String?  @db.Text
+  userId    String
+  productId String
+  orderId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+
+  @@unique([userId, productId, orderId])
+  @@map("ratings")
+}
+
+model Coupon {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  description  String   @db.Text
+  discount     Float
+  discountType String   // "PERCENTAGE" or "FIXED"
+  forNewUser   Boolean  @default(false)
+  forMember    Boolean  @default(false)
+  isPublic     Boolean  @default(true)
+  isActive     Boolean  @default(true)
+  usageLimit   Int      @default(0) // 0 means unlimited
+  usageCount   Int      @default(0)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@map("coupons")
+}
