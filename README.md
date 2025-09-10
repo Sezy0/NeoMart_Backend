@@ -1,5 +1,13 @@
 # NeoMart Backend REST API
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![Express.js](https://img.shields.io/badge/Express.js-4.18-lightgrey.svg)](https://expressjs.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-5.7-2D3748.svg)](https://www.prisma.io/)
+[![Redis](https://img.shields.io/badge/Redis-Cloud-red.svg)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+
 A production-ready multi-vendor e-commerce marketplace backend API built with Node.js, TypeScript, Express, and Prisma. The system supports comprehensive vendor operations with multiple authentication methods including traditional email/password and Discord OAuth2 integration.
 
 ## 🚀 Features
